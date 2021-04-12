@@ -1,0 +1,8 @@
+year,url,file,local_file_date
+2006,https://comtrade.un.org/api/get/bulk/C/A/2006/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2006_freq-A_px-S1_pub-20210326_fmt-csv_ex-20210331.zip,2021-02-05
+2015,https://comtrade.un.org/api/get/bulk/C/A/2015/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2015_freq-A_px-S1_pub-20210306_fmt-csv_ex-20210331.zip,2020-12-02
+2016,https://comtrade.un.org/api/get/bulk/C/A/2016/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2016_freq-A_px-S1_pub-20210328_fmt-csv_ex-20210331.zip,2020-12-03
+2017,https://comtrade.un.org/api/get/bulk/C/A/2017/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2017_freq-A_px-S1_pub-20210328_fmt-csv_ex-20210331.zip,2021-02-15
+2018,https://comtrade.un.org/api/get/bulk/C/A/2018/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2018_freq-A_px-S1_pub-20210320_fmt-csv_ex-20210401.zip,2021-02-05
+2019,https://comtrade.un.org/api/get/bulk/C/A/2019/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2019_freq-A_px-S1_pub-20210312_fmt-csv_ex-20210331.zip,2021-02-16
+2020,https://comtrade.un.org/api/get/bulk/C/A/2020/ALL/S1?token=REPLACE_TOKEN,01-raw-data/sitc-rev1/zip/type-C_r-ALL_ps-2020_freq-A_px-S1_pub-20210327_fmt-csv_ex-20210331.zip,2021-02-24
