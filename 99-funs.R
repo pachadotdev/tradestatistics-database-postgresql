@@ -106,11 +106,15 @@ convert_to_arrow <- function(t, yrs = years_to_update) {
       `Partner ISO` = case_when(
         `Partner ISO` %in% c(NA, "", " ") ~ "0-unspecified",
         TRUE ~ `Partner ISO`
+      ),
+      `Trade Flow` = case_when(
+        `Trade Flow` %in% c(NA, "", " ") ~ "0-unspecified",
+        TRUE ~ `Trade Flow`
       )
     )
 
   d %>%
-    group_by(Year, `Reporter ISO`) %>%
+    group_by(Year, `Trade Flow`, `Reporter ISO`) %>%
     write_dataset(raw_dir_parquet, hive_style = F, max_partitions = 1024L)
 
   rm(d); file_remove(csv); gc()

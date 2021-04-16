@@ -100,10 +100,10 @@ download <- function() {
       rename(new_file = file)
   }
 
-  files_to_remove <- download_links %>%
+  files_to_update <- download_links %>%
     filter(local_file_date < server_file_date)
 
-  years_to_update <- files_to_remove$year
+  years_to_update <- files_to_update$year
 
   lapply(seq_along(years), data_downloading, dl = download_links)
 
@@ -114,9 +114,9 @@ download <- function() {
   download_links <- download_links %>%
     mutate(url = str_replace_all(url, "token=.*", "token=REPLACE_TOKEN"))
 
-  fwrite(download_links, paste0(raw_dir, "/downloaded-files-", Sys.Date(), ".csv"))
-
   if (length(years_to_update) > 0) {
+    fwrite(download_links, paste0(raw_dir, "/downloaded-files-", Sys.Date(), ".csv"))
+
     fwrite(
       download_links %>% filter(year %in% years_to_update),
       paste0(raw_dir, "/updated-files-", Sys.Date(), ".csv")
