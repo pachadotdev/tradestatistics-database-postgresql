@@ -1,0 +1,5 @@
+year,url,file,local_file_date
+1988,https://comtrade.un.org/api/get/bulk/C/A/1988/ALL/H0?token=REPLACE_TOKEN,hs-rev1992/zip/type-C_r-ALL_ps-1988_freq-A_px-H0_pub-20051214_fmt-csv_ex-20190513.zip,2005-12-14
+1989,https://comtrade.un.org/api/get/bulk/C/A/1989/ALL/H0?token=REPLACE_TOKEN,hs-rev1992/zip/type-C_r-ALL_ps-1989_freq-A_px-H0_pub-20051216_fmt-csv_ex-20190512.zip,2005-12-16
+1990,https://comtrade.un.org/api/get/bulk/C/A/1990/ALL/H0?token=REPLACE_TOKEN,hs-rev1992/zip/type-C_r-ALL_ps-1990_freq-A_px-H0_pub-20051222_fmt-csv_ex-20190511.zip,2005-12-22
+1991,https://comtrade.un.org/api/get/bulk/C/A/1991/ALL/H0?token=REPLACE_TOKEN,hs-rev1992/zip/type-C_r-ALL_ps-1991_freq-A_px-H0_pub-20051228_fmt-csv_ex-20190512.zip,2005-12-28

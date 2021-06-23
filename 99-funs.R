@@ -73,6 +73,13 @@ data_downloading <- function(t,dl) {
   }
 }
 
+unspecified <- function(x) {
+  case_when(
+    x %in% c(NA, "") ~ "0-unspecified",
+    TRUE ~ x
+  )
+}
+
 convert_to_arrow <- function(t, yrs = years_to_update) {
   messageline(yrs[t])
 
@@ -90,32 +97,42 @@ convert_to_arrow <- function(t, yrs = years_to_update) {
 
   extract(zip, raw_dir_parquet)
 
-  d <- fread(
-    input = csv,
-    colClasses = list(
-      character = "Commodity Code",
-      numeric = c("Trade Value (US$)", "Qty", "Netweight (kg)")
-    ))
+  tf <- c("export", "import", "re-export", "re-import")
 
-  d <- d %>%
-    mutate(
-      `Reporter ISO` = case_when(
-        `Reporter ISO` %in% c(NA, "", " ") ~ "0-unspecified",
-        TRUE ~ `Reporter ISO`
-      ),
-      `Partner ISO` = case_when(
-        `Partner ISO` %in% c(NA, "", " ") ~ "0-unspecified",
-        TRUE ~ `Partner ISO`
-      ),
-      `Trade Flow` = case_when(
-        `Trade Flow` %in% c(NA, "", " ") ~ "0-unspecified",
-        TRUE ~ `Trade Flow`
-      )
-    )
+  map(
+    tf,
+    function(x) {
+      d <- fread(
+        input = csv,
+        colClasses = list(
+          character = "Commodity Code",
+          numeric = c("Trade Value (US$)", "Qty", "Netweight (kg)")
+        ))
 
-  d %>%
-    group_by(Year, `Trade Flow`, `Reporter ISO`) %>%
-    write_dataset(raw_dir_parquet, hive_style = F, max_partitions = 1024L)
+      d <- d %>%
+        clean_names() %>%
+        mutate(trade_flow = str_to_lower(str_squish(trade_flow))) %>%
+        filter(trade_flow == x)
 
-  rm(d); file_remove(csv); gc()
+      gc()
+
+      d <- d %>%
+        mutate_if(is.character, function(x) { str_to_lower(str_squish(x)) }) %>%
+        mutate(
+          reporter_iso = unspecified(reporter_iso),
+          partner_iso = unspecified(partner_iso),
+          trade_flow = unspecified(trade_flow)
+        ) %>%
+        group_by(year, trade_flow, reporter_iso)
+
+      gc()
+
+      d %>%
+        write_dataset(raw_dir_parquet, hive_style = F, max_partitions = 1024L)
+
+      rm(d); gc()
+    }
+  )
+
+  file_remove(csv)
 }
