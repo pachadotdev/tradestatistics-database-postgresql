@@ -1,4 +1,4 @@
-library(data.table)
+library(readr)
 library(arrow)
 library(jsonlite)
 library(dplyr)

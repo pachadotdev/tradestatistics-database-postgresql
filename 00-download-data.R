@@ -1,5 +1,9 @@
 # Open uncomtrade-datasets-arrow.Rproj before running this function
 
+###########################################################################
+# SOURCE THIS FILE, DON'T RUN BY SECTIONS, OR THE INTERACTIVE INPUT FAILS #
+###########################################################################
+
 # Apache License' Summary
 # Permissions: Commercial use, modification, distribution, patent use, and private use.
 # Limitations: Trademark use, liability, and warranty
@@ -22,7 +26,7 @@ try(
 )
 
 if (isTRUE(nchar(old_file) > 0)) {
-  old_download_links <- as_tibble(fread(old_file)) %>%
+  old_download_links <- read_csv(old_file) %>%
     mutate(
       local_file_date = gsub(".*pub-", "", file),
       local_file_date = gsub("_fmt.*", "", local_file_date),
@@ -92,6 +96,13 @@ if (exists("old_download_links")) {
 files_to_update <- download_links %>%
   filter(local_file_date < server_file_date)
 
+files_to_update_2 <- download_links %>%
+  mutate(file_exists = file.exists(new_file)) %>%
+  filter(file_exists == F)
+
+files_to_update <- files_to_update %>%
+  bind_rows(files_to_update_2)
+
 years_to_update <- files_to_update$year
 
 lapply(seq_along(years), data_downloading, dl = download_links)
@@ -104,9 +115,9 @@ download_links <- download_links %>%
   mutate(url = str_replace_all(url, "token=.*", "token=REPLACE_TOKEN"))
 
 if (length(years_to_update) > 0) {
-  fwrite(download_links, paste0(raw_dir, "/downloaded-files-", Sys.Date(), ".csv"))
+  write_csv(download_links, paste0(raw_dir, "/downloaded-files-", Sys.Date(), ".csv"))
 
-  fwrite(
+  write_csv(
     download_links %>% filter(year %in% years_to_update),
     paste0(raw_dir, "/updated-files-", Sys.Date(), ".csv")
   )
