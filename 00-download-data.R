@@ -125,21 +125,41 @@ if (length(years_to_update) > 0) {
 
 # save as arrow parquet ---------------------------------------------------
 
+if (classification == "sitc") {
+  aggregations <- 0:5
+} else {
+  aggregations <- 0:6
+}
+
+# re-create any missing/updated arrow dataset
+raw_subdirs_parquet <- expand.grid(
+  base_dir = raw_dir_parquet,
+  aggregations = aggregations,
+  flow = c("import", "export", "re-import", "re-export"),
+  year = years
+) %>%
+  mutate(
+    file = paste0(
+      base_dir,
+      "/aggregate_level=", aggregations, "/trade_flow=",
+      flow, "/year=", year),
+    exists = file.exists(file)
+  )
+
+update_years <- raw_subdirs_parquet %>%
+  filter(exists == FALSE | year %in% years_to_update) %>%
+  select(year) %>%
+  distinct() %>%
+  pull()
+
 raw_zip <- list.files(
   path = raw_dir_zip,
   pattern = "\\.zip",
   full.names = T
 ) %>%
-  grep(paste(paste0("ps-", years_to_update), collapse = "|"), .,
+  grep(paste(paste0("ps-", update_years), collapse = "|"), .,
        value = TRUE)
 
-# (remove) the old arrow files and create the arrow files again
-if (length(years_to_update) > 0) {
-  lapply(seq_along(years_to_update), convert_to_arrow, yrs = years_to_update)
-}
-
-# also re-create any missing arrow dataset
-missing_years <- years[!file.exists(paste0(raw_dir_parquet, "/", years))]
-if (any(missing_years > 0)) {
-  lapply(seq_along(missing_years), convert_to_arrow, yrs = missing_years)
+if (any(update_years > 0)) {
+  lapply(seq_along(update_years), convert_to_arrow, yrs = update_years)
 }
