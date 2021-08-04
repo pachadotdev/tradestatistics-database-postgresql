@@ -45,4 +45,4 @@ classification2 <- switch (
 
 max_year <- 2020
 years <- revision2:max_year
-if (classification == "S1") years <- revision2:1975 # we don't need all of SITC rev 1
+if (classification2 == "S1") years <- revision2:1975 # we don't need all of SITC rev 1
