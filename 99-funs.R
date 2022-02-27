@@ -26,8 +26,9 @@ data_downloading <- function(t,dl) {
       (dl$local_file_date[t] < dl$server_file_date[t]) &
       !is.na(dl$old_file[t])) {
     file_remove(dl$old_file[t])
-    file_remove(list.files(raw_dir_parquet, pattern = as,character(dl$year[t]),
-                           recursive = T, include.dirs = T))
+    unlink(list.files(raw_dir_parquet, pattern = as.character(dl$year[t]),
+                           recursive = T, include.dirs = T, full.names = T),
+           recursive = T)
   }
   if (!file.exists(dl$new_file[t])) {
     message(paste("Downloading", dl$new_file[t]))
