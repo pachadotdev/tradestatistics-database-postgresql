@@ -21,52 +21,16 @@ file_remove <- function(x) {
   try(file.remove(x))
 }
 
-data_downloading <- function(t,dl) {
-  if (remove_old_files == 1 &
-      (dl$local_file_date[t] < dl$server_file_date[t]) &
-      !is.na(dl$old_file[t])) {
-    file_remove(dl$old_file[t])
-    unlink(list.files(raw_dir_parquet, pattern = as.character(dl$year[t]),
-                           recursive = T, include.dirs = T, full.names = T),
-           recursive = T)
-  }
-  if (!file.exists(dl$new_file[t])) {
-    message(paste("Downloading", dl$new_file[t]))
-    Sys.sleep(sample(seq(5, 10, by = 1), 1))
-    try(
-      download.file(dl$url[t],
-                    dl$new_file[t],
-                    method = "wget",
-                    quiet = T,
-                    extra = "--no-check-certificate"
-      )
-    )
+data_downloading <- function(download_links) {
+  message("Downloading files in parallel...")
 
-    if (file.size(dl$new_file[t]) == 0) {
-      fs <- 1
-    } else {
-      fs <- 0
-    }
+  base_command <- "wget --continue --retry-connrefused --no-http-keep-alive --tries=0 --timeout=60 -O %s %s"
 
-    while (fs > 0) {
-      try(
-        download.file(dl$url[t],
-                      dl$new_file[t],
-                      method = "wget",
-                      quiet = T,
-                      extra = "--no-check-certificate"
-        )
-      )
+  writeLines(sprintf(base_command, download_links$new_file, download_links$url), "commands.txt")
 
-      if (file.size(dl$new_file[t]) == 0) {
-        fs <- fs + 1
-      } else {
-        fs <- 0
-      }
-    }
-  } else {
-    message(paste(dl$new_file[t], "exists. Skiping."))
-  }
+  system("parallel --jobs 4 < commands.txt")
+
+  unlink("commands.txt")
 }
 
 unspecified <- function(x) {

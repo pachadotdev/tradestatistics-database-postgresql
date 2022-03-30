@@ -45,3 +45,6 @@ classification2 <- switch (
 
 max_year <- 2020
 years <- revision2:max_year
+if(length(subset_years) > 0) {
+  years <- years[years >= min(subset_years) & years <= max(subset_years)]
+}

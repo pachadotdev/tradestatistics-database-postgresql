@@ -105,7 +105,7 @@ files_to_update <- files_to_update %>%
 
 years_to_update <- files_to_update$year
 
-lapply(seq_along(years), data_downloading, dl = download_links)
+data_downloading(download_links)
 
 download_links <- download_links %>%
   select(year, url, new_file, local_file_date) %>%

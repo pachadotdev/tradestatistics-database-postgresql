@@ -1,0 +1,3 @@
+year,url,file,local_file_date
+1978,https://comtrade.un.org/api/get/bulk/C/A/1978/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1978_freq-A_px-S2_pub-20050214_fmt-csv_ex-20190511.zip,2005-02-14
+1982,https://comtrade.un.org/api/get/bulk/C/A/1982/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1982_freq-A_px-S2_pub-20091029_fmt-csv_ex-20190512.zip,2009-10-29

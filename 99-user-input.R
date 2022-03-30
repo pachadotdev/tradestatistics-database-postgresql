@@ -18,3 +18,6 @@ remove_old_files <- menu(
   title = "Remove old files (y/n):",
   graphics = F
 )
+
+subset_years <- readline(prompt = "Years to download (i.e. `2000:2020`, hit enter to download all available data): ")
+subset_years <- as.numeric(unlist(strsplit(subset_years, ":")))

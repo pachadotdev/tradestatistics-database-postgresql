@@ -1,0 +1,16 @@
+year,url,file,local_file_date
+1976,https://comtrade.un.org/api/get/bulk/C/A/1976/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1976_freq-A_px-S2_pub-20041207_fmt-csv_ex-20190513.zip,2004-12-07
+1977,https://comtrade.un.org/api/get/bulk/C/A/1977/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1977_freq-A_px-S2_pub-20041207_fmt-csv_ex-20190512.zip,2004-12-07
+1978,https://comtrade.un.org/api/get/bulk/C/A/1978/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1978_freq-A_px-S2_pub-20050214_fmt-csv_ex-20190511.zip,2005-02-14
+1979,https://comtrade.un.org/api/get/bulk/C/A/1979/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1979_freq-A_px-S2_pub-20051212_fmt-csv_ex-20190512.zip,2005-12-12
+1980,https://comtrade.un.org/api/get/bulk/C/A/1980/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1980_freq-A_px-S2_pub-20051212_fmt-csv_ex-20190511.zip,2005-12-12
+1981,https://comtrade.un.org/api/get/bulk/C/A/1981/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1981_freq-A_px-S2_pub-20051212_fmt-csv_ex-20190513.zip,2005-12-12
+1982,https://comtrade.un.org/api/get/bulk/C/A/1982/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1982_freq-A_px-S2_pub-20091029_fmt-csv_ex-20190512.zip,2009-10-29
+1983,https://comtrade.un.org/api/get/bulk/C/A/1983/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1983_freq-A_px-S2_pub-20091029_fmt-csv_ex-20190513.zip,2009-10-29
+1984,https://comtrade.un.org/api/get/bulk/C/A/1984/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1984_freq-A_px-S2_pub-20091029_fmt-csv_ex-20190512.zip,2009-10-29
+1985,https://comtrade.un.org/api/get/bulk/C/A/1985/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1985_freq-A_px-S2_pub-20091029_fmt-csv_ex-20190512.zip,2009-10-29
+1986,https://comtrade.un.org/api/get/bulk/C/A/1986/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1986_freq-A_px-S2_pub-20091029_fmt-csv_ex-20190512.zip,2009-10-29
+1987,https://comtrade.un.org/api/get/bulk/C/A/1987/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1987_freq-A_px-S2_pub-20051214_fmt-csv_ex-20190512.zip,2005-12-14
+1988,https://comtrade.un.org/api/get/bulk/C/A/1988/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1988_freq-A_px-S2_pub-20051214_fmt-csv_ex-20190513.zip,2005-12-14
+1989,https://comtrade.un.org/api/get/bulk/C/A/1989/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1989_freq-A_px-S2_pub-20051219_fmt-csv_ex-20190512.zip,2005-12-19
+1990,https://comtrade.un.org/api/get/bulk/C/A/1990/ALL/S2?token=REPLACE_TOKEN,sitc-rev2/zip/type-C_r-ALL_ps-1990_freq-A_px-S2_pub-20051222_fmt-csv_ex-20190511.zip,2005-12-22

@@ -34,3 +34,7 @@ Depends on the classification. For example, SITC rev 2 (1976-2020) needs 20GB of
 * 7.1GB to download the ZIP files
 * 10.6GB for the Parquet files, which need free space to be created year-by-year.
 * Up to 2.7GB for each extracted CSV file for Parquet files creation
+
+## Notes
+
+The scripts require 7-Zip to be installed.
