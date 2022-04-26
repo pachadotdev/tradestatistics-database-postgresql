@@ -1,7 +1,11 @@
 library(readr)
 library(arrow)
 library(jsonlite)
-library(dplyr)
+library(dplyr, warn.conflicts = FALSE)
 library(stringr)
 library(janitor)
 library(purrr)
+library(uncomtrademisc)
+
+options(dplyr.summarise.inform = FALSE)
+options(dplyr.mutate_if.inform = FALSE)
