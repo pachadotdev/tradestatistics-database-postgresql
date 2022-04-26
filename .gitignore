@@ -41,3 +41,4 @@ vignettes/*.pdf
 # data
 *.zip
 *.parquet
+mfn-rtas
