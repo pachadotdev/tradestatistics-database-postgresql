@@ -14,5 +14,6 @@ update_yrp(con)
 update_yrpc(con)
 update_rtas(con)
 update_tariffs(con)
+update_distances(con)
 
 RPostgres::dbDisconnect(con)
