@@ -14,8 +14,11 @@ saveRDS(
     ),
   "attributes/commodities.rds"
 )
+
 saveRDS(tradestatistics::ots_commodities_short, "attributes/commodities_short.rds")
-saveRDS(tradestatistics::ots_countries, "attributes/countries.rds")
+
+saveRDS(readxl::read_xlsx("attributes/countries.xlsx"), "attributes/countries.rds")
+
 saveRDS(
   tradestatistics::ots_sections %>%
     mutate(
@@ -26,6 +29,7 @@ saveRDS(
     ),
   "attributes/sections.rds"
 )
+
 saveRDS(tradestatistics::ots_sections_colors, "attributes/sections_colors.rds")
 
 # system("ln -s ../rtas-and-tariffs/mfn")
