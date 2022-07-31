@@ -29,6 +29,8 @@ vignettes/*.pdf
 # data
 *.zip
 *.parquet
-mfn-rtas/
+tariffs/
 models/
 04-tidy-comtrade-data-imputed.R
+mfn
+prf

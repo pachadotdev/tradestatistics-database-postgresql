@@ -1,5 +1,3 @@
-# Open uncomtrade-datasets-arrow.Rproj before running this function
-
 source("99-packages.R")
 
 con <- con_tradestatistics()
@@ -15,6 +13,8 @@ update_yrpc(con)
 update_rtas(con)
 update_tariffs(con)
 update_distances(con)
+update_gdp(con)
 update_gdp_deflator(con)
+update_vaccine_inputs(con)
 
 RPostgres::dbDisconnect(con)
