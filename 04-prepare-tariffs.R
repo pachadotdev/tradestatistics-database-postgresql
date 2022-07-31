@@ -21,7 +21,28 @@ fix_iso_codes <- function(val) {
   )
 }
 
-# PREFERENTIAL RATES ----
+eu_years <- read_csv("eu_members/EU-years.csv") %>%
+  select(reporter_iso = iso3, year) %>%
+  mutate(reporter_iso = str_to_lower(reporter_iso), eu_member = 1L)
+
+eu_years_2 <- expand_grid(
+  reporter_iso = str_to_lower(eu_years$reporter_iso),
+  year = min(eu_years$year):2020
+) %>%
+  arrange(reporter_iso, year) %>%
+  left_join(eu_years) %>%
+  group_by(reporter_iso) %>%
+  fill(eu_member, .direction = "down") %>%
+  mutate(eu_member = if_else(is.na(eu_member), 0L, eu_member)) %>%
+  mutate(
+    eu_member = case_when(
+      reporter_iso == "gbr" & year >= 2020 ~ 0L,
+      TRUE ~ eu_member
+    )
+  ) %>%
+  filter(year >= 2002 & year <= 2020)
+
+rm(eu_years)
 
 fcsv <- list.files("prf", pattern = "csv$", full.names = T)
 fcsv <- grep(paste(2002:2018, collapse = "|"), fcsv, value = T)
@@ -32,57 +53,42 @@ prf <- map2(
   fcsv,
   fcsv2,
   function(x,y) {
-    if (paste0("tariffs/", y)) { return(TRUE) }
+    z <- as.integer(gsub(".*-|\\.csv", "", x))
+    if (file.exists(paste0("tariffs/", z))) { return(TRUE) }
 
     message(paste0(x, "\n", y))
 
-    prf <- read_csv(x,
-                    col_types = cols(
-                      reporter = col_character(),
-                      partner = col_character(), code = col_character(),
-                      hs = col_character(), prf = col_double(),
-                      year = col_integer()))
+    sections <- ots_commodities %>%
+      distinct(section_code) %>%
+      filter(section_code != "99") %>%
+      arrange(section_code) %>%
+      pull()
 
-    z <- unique(prf$year)
-
-    prf <- prf %>%
-      mutate(hs = if_else(nchar(hs) == 5, paste0("0", hs), hs)) %>%
-      # filter(prf > 0) %>%
-      select(-year) %>%
-      group_by(reporter) %>%
-      nest()
-
-    mfn <- read_csv(y,
-                    col_types = cols(
-                      reporter = col_character(),
-                      hs = col_character(), mfn = col_number(),
-                      year = col_number())) %>%
-      mutate(hs = if_else(nchar(hs) == 5, paste0("0", hs), hs)) %>%
-      rename(reporter_iso = reporter, commodity_code = hs) %>%
-      select(-year) %>%
-      mutate_if(is.character, str_to_lower) %>%
-      inner_join(
-        ots_countries %>%
-          select(reporter_iso = country_iso) %>%
-          as_tibble()
-      ) %>%
-      inner_join(
-        ots_commodities %>%
-          select(commodity_code) %>%
-          as_tibble()
-      )
-
-    prf <- map_df(
-      prf %>% select(reporter) %>% arrange(reporter) %>% pull(),
-      function(r) {
-        message(r)
-
-        prf %>%
-          filter(reporter == r) %>%
-          unnest(data) %>%
-          ungroup() %>%
+    map(
+      sections,
+      function(s) {
+        message(s)
+        prf <- read_csv(x,
+                        col_types = cols(
+                          reporter = col_character(),
+                          partner = col_character(), code = col_character(),
+                          hs = col_character(), prf = col_double(),
+                          year = col_integer())) %>%
+          mutate(hs = if_else(nchar(hs) == 5, paste0("0", hs), hs)) %>%
+          # filter(prf > 0) %>%
           rename(reporter_iso = reporter, partner_iso = partner,
                  commodity_code = hs) %>%
+          inner_join(
+            ots_commodities %>%
+              select(commodity_code) %>%
+              as_tibble()
+          ) %>%
+          inner_join(
+            ots_commodities %>%
+              select(commodity_code, section_code) %>%
+              filter(section_code == s) %>%
+              as_tibble()
+          ) %>%
           mutate_if(is.character, str_to_lower) %>%
           mutate(
             reporter_iso = fix_iso_codes(reporter_iso),
@@ -103,81 +109,187 @@ prf <- map2(
               select(commodity_code) %>%
               as_tibble()
           ) %>%
-          group_by(reporter_iso, partner_iso, commodity_code) %>%
-          summarise(prf = mean(prf, na.rm = TRUE)) %>%
-          ungroup()
-      }
-    )
+          select(-year) %>%
+          group_by(reporter_iso) %>%
+          nest()
 
-    gc()
+        mfn <- read_csv(y,
+                        col_types = cols(
+                          reporter = col_character(),
+                          hs = col_character(), mfn = col_number(),
+                          year = col_number())) %>%
+          mutate(hs = if_else(nchar(hs) == 5, paste0("0", hs), hs)) %>%
+          rename(reporter_iso = reporter, commodity_code = hs) %>%
+          select(-year) %>%
+          inner_join(
+            ots_commodities %>%
+              select(commodity_code) %>%
+              as_tibble()
+          ) %>%
+          inner_join(
+            ots_commodities %>%
+              select(commodity_code, section_code) %>%
+              filter(section_code == s) %>%
+              as_tibble()
+          ) %>%
+          mutate_if(is.character, str_to_lower) %>%
+          mutate(
+            reporter_iso = fix_iso_codes(reporter_iso)
+          ) %>%
+          inner_join(
+            ots_countries %>%
+              select(reporter_iso = country_iso) %>%
+              as_tibble()
+          )
 
-    # unique(nchar(prf$hs))
-    # unique(nchar(mfn$hs))
+        # mfn %>% filter(reporter_iso == "e-492")
 
-    d <- crossing(
-      reporter_iso = mfn %>%
-        select(reporter_iso) %>%
-        distinct() %>%
-        bind_rows(
-          prf %>%
+        mfn_1 <- mfn %>% filter(reporter_iso != "e-492")
+        mfn_2 <- mfn %>% anti_join(mfn_1)
+
+        mfn_2 <- eu_years_2 %>%
+          filter(year == z, eu_member == 1L) %>%
+          rename(reporter_iso.y = reporter_iso) %>%
+          mutate(reporter_iso = "e-492") %>%
+          full_join(mfn_2) %>%
+          # mutate(reporter_iso.y = if_else(is.na(reporter_iso.y), reporter_iso, reporter_iso.y)) %>%
+          select(reporter_iso = reporter_iso.y, commodity_code, mfn)
+
+        mfn <- mfn_1 %>%
+          bind_rows(mfn_2) %>%
+          group_by(reporter_iso, commodity_code) %>%
+          summarise(mfn = min(mfn, na.rm = T)) %>%
+          filter(!is.na(mfn))
+
+        rm(mfn_1, mfn_2)
+
+        # mfn %>%
+        #   filter(is.na(reporter_iso))
+
+        prf <- map_df(
+          prf %>% select(reporter_iso) %>% arrange(reporter_iso) %>% pull(),
+          function(r) {
+            d <- prf %>%
+              filter(reporter_iso == r) %>%
+              unnest(data) %>%
+              ungroup() %>%
+              group_by(reporter_iso, partner_iso, commodity_code) %>%
+              summarise(prf = mean(prf, na.rm = TRUE)) %>%
+              ungroup()
+
+            d_1 <- d %>% filter(reporter_iso != "e-492")
+            d_2 <- d %>% anti_join(d_1)
+
+            d_2 <- eu_years_2 %>%
+              filter(year == z, eu_member == 1L) %>%
+              rename(reporter_iso.y = reporter_iso) %>%
+              mutate(reporter_iso = "e-492") %>%
+              full_join(d_2) %>%
+              # mutate(reporter_iso.y = if_else(is.na(reporter_iso.y), reporter_iso, reporter_iso.y)) %>%
+              select(reporter_iso = reporter_iso.y, partner_iso, commodity_code, prf) %>%
+              filter(!is.na(prf))
+
+            d <- d_1 %>% bind_rows(d_2)
+
+            d_1 <- d %>% filter(partner_iso != "e-492")
+            d_2 <- d %>% anti_join(d_1)
+
+            d_2 <- eu_years_2 %>%
+              filter(year == z, eu_member == 1L) %>%
+              rename(partner_iso.y = reporter_iso) %>%
+              mutate(partner_iso = "e-492") %>%
+              full_join(d_2) %>%
+              # mutate(partner_iso.y = if_else(is.na(partner_iso.y), partner_iso, partner_iso.y)) %>%
+              select(reporter_iso, partner_iso = partner_iso.y, commodity_code, prf) %>%
+              filter(!is.na(prf))
+
+            d <- d_1 %>%
+              bind_rows(d_2) %>%
+              group_by(reporter_iso, partner_iso, commodity_code) %>%
+              summarise(prf = min(prf, na.rm = T))
+
+            rm(d_1, d_2)
+
+            return(d)
+          }
+        )
+
+        # unique(nchar(prf$hs))
+        # unique(nchar(mfn$hs))
+
+        d <- crossing(
+          reporter_iso = mfn %>%
+            ungroup() %>%
             select(reporter_iso) %>%
-            distinct()
-        ) %>%
-        distinct() %>%
-        pull(),
-      partner_iso = prf %>%
-        select(partner_iso) %>%
-        distinct() %>%
-        pull(),
-      commodity_code = mfn %>%
-        select(commodity_code) %>%
-        distinct() %>%
-        bind_rows(
-          prf %>%
+            distinct() %>%
+            bind_rows(
+              prf %>%
+                ungroup() %>%
+                select(reporter_iso) %>%
+                distinct()
+            ) %>%
+            distinct() %>%
+            pull(),
+          partner_iso = prf %>%
+            ungroup() %>%
+            select(partner_iso) %>%
+            distinct() %>%
+            pull(),
+          commodity_code = mfn %>%
+            ungroup() %>%
             select(commodity_code) %>%
-            distinct()
-        ) %>%
-        distinct() %>%
-        pull()
-    )
+            distinct() %>%
+            bind_rows(
+              prf %>%
+                ungroup() %>%
+                select(commodity_code) %>%
+                distinct()
+            ) %>%
+            distinct() %>%
+            pull()
+        )
 
-    d <- d %>%
-      left_join(
-        prf %>% select(reporter_iso, partner_iso, commodity_code, prf)
-      ) %>%
-      left_join(
-        mfn %>% select(reporter_iso, commodity_code, mfn)
-      )
+        d <- d %>%
+          left_join(
+            prf %>% select(reporter_iso, partner_iso, commodity_code, prf)
+          )
 
-    rm(prf, mfn)
-    gc()
+        d <- d %>%
+          left_join(
+            mfn %>% select(reporter_iso, commodity_code, mfn)
+          )
 
-    d <- d %>%
-      group_by(reporter_iso) %>%
-      nest()
+        rm(prf, mfn)
+        gc()
 
-    map(
-      d %>% select(reporter_iso) %>% arrange(reporter_iso) %>% pull(),
-      function(r) {
-        d %>%
-          filter(reporter_iso == r) %>%
-          unnest(data) %>%
-          mutate(tariff = pmin(prf, mfn, na.rm = TRUE)) %>%
-          select(-prf, -mfn) %>%
-          # filter(tariff > 0) %>%
-          mutate(year = z) %>%
-          select(year, everything()) %>%
-          group_by(year, reporter_iso) %>%
-          write_dataset("tariffs", partitioning = c("year","reporter_iso"),
-                        hive_style = F)
+        d <- d %>%
+          group_by(reporter_iso) %>%
+          nest()
 
-        return(TRUE)
+        map(
+          d %>% select(reporter_iso) %>% arrange(reporter_iso) %>% pull(),
+          function(r) {
+            d %>%
+              filter(reporter_iso == r) %>%
+              unnest(data) %>%
+              mutate(tariff = pmin(prf, mfn, na.rm = TRUE)) %>%
+              select(-prf, -mfn) %>%
+              # filter(tariff > 0) %>%
+              mutate(year = z) %>%
+              select(year, everything()) %>%
+              mutate(section_code = s) %>%
+              group_by(year, reporter_iso, section_code) %>%
+              write_dataset("tariffs",
+                            partitioning = c("year","reporter_iso","section_code"),
+                            hive_style = F)
+
+            return(TRUE)
+          }
+        )
       }
     )
 
-    rm(d)
     gc()
-
     return(TRUE)
   }
 )
