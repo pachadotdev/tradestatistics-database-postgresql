@@ -80,11 +80,6 @@ prf <- map2(
                  commodity_code = hs) %>%
           inner_join(
             ots_commodities %>%
-              select(commodity_code) %>%
-              as_tibble()
-          ) %>%
-          inner_join(
-            ots_commodities %>%
               select(commodity_code, section_code) %>%
               filter(section_code == s) %>%
               as_tibble()
@@ -104,14 +99,52 @@ prf <- map2(
               select(partner_iso = country_iso) %>%
               as_tibble()
           ) %>%
-          inner_join(
-            ots_commodities %>%
-              select(commodity_code) %>%
-              as_tibble()
-          ) %>%
-          select(-year) %>%
-          group_by(reporter_iso) %>%
-          nest()
+          select(-year)
+
+        prf <- prf %>%
+          group_by(reporter_iso, partner_iso, section_code, commodity_code) %>%
+          summarise(prf = min(prf, na.rm = T))
+
+        prf_1 <- prf %>% filter(reporter_iso != "e-492")
+        prf_2 <- prf %>% anti_join(prf_1)
+
+        prf_2 <- eu_years_2 %>%
+          filter(year == z, eu_member == 1L) %>%
+          rename(reporter_iso.y = reporter_iso) %>%
+          mutate(reporter_iso = "e-492") %>%
+          full_join(prf_2) %>%
+          select(reporter_iso = reporter_iso.y, partner_iso, section_code, commodity_code, prf) %>%
+          filter(!is.na(prf))
+
+        prf <- prf_1 %>% bind_rows(prf_2)
+
+        prf_1 <- prf %>% filter(partner_iso != "e-492")
+        prf_2 <- prf %>% anti_join(prf_1)
+
+        prf_2 <- eu_years_2 %>%
+          filter(year == z, eu_member == 1L) %>%
+          rename(partner_iso.y = reporter_iso) %>%
+          mutate(partner_iso = "e-492") %>%
+          full_join(prf_2) %>%
+          # mutate(reporter_iso.y = if_else(is.na(reporter_iso.y), reporter_iso, reporter_iso.y)) %>%
+          select(reporter_iso, partner_iso = partner_iso.y, section_code, commodity_code, prf) %>%
+          filter(!is.na(prf))
+
+        prf <- prf_1 %>% bind_rows(prf_2)
+
+        rm(prf_1, prf_2)
+
+        prf <- prf %>%
+          group_by(reporter_iso, partner_iso, commodity_code) %>%
+          summarise(prf = min(prf, na.rm = T))
+
+        # stopifnot(all.equal(
+        #   prf %>% nrow(),
+        #   prf %>%
+        #     group_by(reporter_iso, partner_iso, commodity_code) %>%
+        #     distinct() %>%
+        #     nrow()
+        # ))
 
         mfn <- read_csv(y,
                         col_types = cols(
@@ -121,11 +154,6 @@ prf <- map2(
           mutate(hs = if_else(nchar(hs) == 5, paste0("0", hs), hs)) %>%
           rename(reporter_iso = reporter, commodity_code = hs) %>%
           select(-year) %>%
-          inner_join(
-            ots_commodities %>%
-              select(commodity_code) %>%
-              as_tibble()
-          ) %>%
           inner_join(
             ots_commodities %>%
               select(commodity_code, section_code) %>%
@@ -141,8 +169,6 @@ prf <- map2(
               select(reporter_iso = country_iso) %>%
               as_tibble()
           )
-
-        # mfn %>% filter(reporter_iso == "e-492")
 
         mfn_1 <- mfn %>% filter(reporter_iso != "e-492")
         mfn_2 <- mfn %>% anti_join(mfn_1)
@@ -163,59 +189,13 @@ prf <- map2(
 
         rm(mfn_1, mfn_2)
 
-        # mfn %>%
-        #   filter(is.na(reporter_iso))
-
-        prf <- map_df(
-          prf %>% select(reporter_iso) %>% arrange(reporter_iso) %>% pull(),
-          function(r) {
-            d <- prf %>%
-              filter(reporter_iso == r) %>%
-              unnest(data) %>%
-              ungroup() %>%
-              group_by(reporter_iso, partner_iso, commodity_code) %>%
-              summarise(prf = mean(prf, na.rm = TRUE)) %>%
-              ungroup()
-
-            d_1 <- d %>% filter(reporter_iso != "e-492")
-            d_2 <- d %>% anti_join(d_1)
-
-            d_2 <- eu_years_2 %>%
-              filter(year == z, eu_member == 1L) %>%
-              rename(reporter_iso.y = reporter_iso) %>%
-              mutate(reporter_iso = "e-492") %>%
-              full_join(d_2) %>%
-              # mutate(reporter_iso.y = if_else(is.na(reporter_iso.y), reporter_iso, reporter_iso.y)) %>%
-              select(reporter_iso = reporter_iso.y, partner_iso, commodity_code, prf) %>%
-              filter(!is.na(prf))
-
-            d <- d_1 %>% bind_rows(d_2)
-
-            d_1 <- d %>% filter(partner_iso != "e-492")
-            d_2 <- d %>% anti_join(d_1)
-
-            d_2 <- eu_years_2 %>%
-              filter(year == z, eu_member == 1L) %>%
-              rename(partner_iso.y = reporter_iso) %>%
-              mutate(partner_iso = "e-492") %>%
-              full_join(d_2) %>%
-              # mutate(partner_iso.y = if_else(is.na(partner_iso.y), partner_iso, partner_iso.y)) %>%
-              select(reporter_iso, partner_iso = partner_iso.y, commodity_code, prf) %>%
-              filter(!is.na(prf))
-
-            d <- d_1 %>%
-              bind_rows(d_2) %>%
-              group_by(reporter_iso, partner_iso, commodity_code) %>%
-              summarise(prf = min(prf, na.rm = T))
-
-            rm(d_1, d_2)
-
-            return(d)
-          }
-        )
-
-        # unique(nchar(prf$hs))
-        # unique(nchar(mfn$hs))
+        # stopifnot(all.equal(
+        #   mfn %>% nrow(),
+        #   mfn %>%
+        #     group_by(reporter_iso, commodity_code) %>%
+        #     distinct() %>%
+        #     nrow()
+        # ))
 
         d <- crossing(
           reporter_iso = mfn %>%
@@ -251,7 +231,8 @@ prf <- map2(
 
         d <- d %>%
           left_join(
-            prf %>% select(reporter_iso, partner_iso, commodity_code, prf)
+            prf %>%
+              select(reporter_iso, partner_iso, commodity_code, prf)
           )
 
         d <- d %>%
@@ -272,9 +253,16 @@ prf <- map2(
             d %>%
               filter(reporter_iso == r) %>%
               unnest(data) %>%
-              mutate(tariff = pmin(prf, mfn, na.rm = TRUE)) %>%
+              mutate(
+                tariff = pmin(prf, mfn, na.rm = TRUE),
+                source = case_when(
+                  tariff == prf ~ "prf",
+                  tariff == mfn ~ "mfn",
+                  is.na(tariff) ~ NA_character_
+                )
+              ) %>%
               select(-prf, -mfn) %>%
-              # filter(tariff > 0) %>%
+              filter(is.finite(tariff)) %>%
               mutate(year = z) %>%
               select(year, everything()) %>%
               mutate(section_code = s) %>%
@@ -286,6 +274,8 @@ prf <- map2(
             return(TRUE)
           }
         )
+
+        return(TRUE)
       }
     )
 
