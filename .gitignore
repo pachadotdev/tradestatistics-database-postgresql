@@ -34,3 +34,4 @@ models/
 04-tidy-comtrade-data-imputed.R
 mfn
 prf
+*.json
