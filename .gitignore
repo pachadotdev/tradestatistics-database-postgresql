@@ -35,3 +35,4 @@ models/
 mfn
 prf
 *.json
+tradestatistics.sql

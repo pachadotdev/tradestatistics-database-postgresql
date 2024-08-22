@@ -49,7 +49,11 @@ d <- d %>%
   arrange(country_iso, from, to)
 
 d <- d %>%
-  filter(from >= 1980, to > from) %>%
+  filter(to > from) %>%
   select(year_from = from, year_to = to, country_iso, everything())
+
+d <- d %>%
+  filter(year_from >= 1980 & year_from <= 2020) %>%
+  filter(year_to >= 1981 & year_to <= 2021)
 
 saveRDS(d, "gdp/gdp_deflator.rds")
