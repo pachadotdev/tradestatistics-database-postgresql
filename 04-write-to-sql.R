@@ -7,7 +7,8 @@ con <- dbConnect(
   host = "localhost",
   dbname = "tradestatistics",
   user = Sys.getenv("LOCAL_SQL_USR"),
-  password = Sys.getenv("LOCAL_SQL_PWD")
+  password = Sys.getenv("LOCAL_SQL_PWD"),
+  port = 5432
 )
 
 # Functions ----
@@ -133,12 +134,14 @@ dbSendQuery(
   con,
   "CREATE TABLE public.commodities_short
       (
-      commodity_code char(4) NOT NULL,
+      commodity_code varchar(4) DEFAULT NULL,
       commodity_fullname_english text DEFAULT NULL
       )"
 )
 
 d <- readRDS("attributes/commodities.rds")
+
+# unique(nchar(d$commodity_code))
 
 d <- d %>%
   mutate(
@@ -151,7 +154,21 @@ d <- d %>%
 
 dbWriteTable(con, "commodities", d, overwrite = T, row.names = F)
 
-d <- readRDS("attributes/commodities_short.rds")
+d2 <- readRDS("attributes/commodities_short.rds")
+
+d %>%
+  filter(nchar(commodity_code) == 3)
+
+d2 <- d2 %>%
+  bind_rows(
+    d %>%
+      filter(nchar(commodity_code) %in% 2:3) %>%
+      select(commodity_code, commodity_fullname_english)
+  ) %>%
+  distinct() %>%
+  arrange(commodity_code)
+
+# unique(nchar(d$commodity_code))
 
 # d2 <- tbl(con, "hs_rev2012_commodities") %>%
 #   collect() %>%
@@ -164,7 +181,7 @@ d <- readRDS("attributes/commodities_short.rds")
 # d2 %>%
 #   anti_join(d)
 
-dbWriteTable(con, "commodities_short", d, overwrite = T, row.names = F)
+dbWriteTable(con, "commodities_short", d2, overwrite = T, row.names = F)
 
 # Countries ----
 
@@ -254,15 +271,28 @@ dbSendQuery(
 
 d <- readRDS("gdp/gdp_deflator.rds")
 
+d <- d %>%
+  mutate(
+    country_iso = ifelse(country_iso == "wld", "all", country_iso)
+  )
+
+# d2 <- tradestatistics::ots_gdp_deflator
+
+unique(d$country_iso)
+
 d2 <- tbl(con, "countries") %>%
   select(country_iso) %>%
   collect()
 
 d <- d %>%
-  inner_join(d2)
+  inner_join(d2) %>%
+  arrange(year_from, year_to, country_iso)
 
 # d %>%
-#   filter(country_iso == "chi")
+#   filter(country_iso == "all")
+
+# d2 %>%
+#   filter(country_iso == "all")
 
 dbWriteTable(con, "gdp_deflator", d, overwrite = T, row.names = F)
 
@@ -720,7 +750,7 @@ map(
   function(y2) {
     message(y2)
 
-    d <- tbl(con, "yrp") %>%
+    d <- tbl(con, "yrpc") %>%
       select(year, reporter_iso, partner_iso, trade_value_usd_imp,
         trade_value_usd_exp) %>%
       filter(year == y2) %>%
@@ -817,6 +847,16 @@ dbSendQuery(
 dbSendQuery(
   con,
   "ALTER TABLE public.gdp_deflator ADD CONSTRAINT gdp_deflator_countries_fk FOREIGN KEY (country_iso) REFERENCES public.countries(country_iso)"
+)
+
+dbSendQuery(
+  con,
+  "ALTER TABLE public.commodities_short ADD CONSTRAINT commodities_short_commodities_key UNIQUE (commodity_code)"
+)
+
+dbSendQuery(
+  con,
+  "ALTER TABLE public.commodities ADD CONSTRAINT commodities_short_commodities_fkey FOREIGN KEY (commodity_code_short) REFERENCES public.commodities_short(commodity_code)"
 )
 
 dbDisconnect(con)

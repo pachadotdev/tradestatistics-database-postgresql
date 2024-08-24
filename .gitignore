@@ -36,3 +36,10 @@ mfn
 prf
 *.json
 tradestatistics.sql
+tradestatistics_hs_rev1992.sql
+tradestatistics_hs_rev2002.sql
+tradestatistics_hs_rev2007.sql
+tradestatistics_hs_rev2012.sql
+tradestatistics_sitc_rev1.sql
+tradestatistics_sitc_rev2.sql
+tradestatistics_valuation_systems.sql
