@@ -20,7 +20,7 @@ This represents a decade of experience working with international trade data, in
 
 For researchers, analysts, and organizations requiring immediate access to this cleaned and harmonized dataset, a production-ready version is available for 995 CAD (~700 USD).
 
-**[📊Access the Complete Dataset📊](https://buymeacoffee.com/pacha/e/456610)**
+**[📊 Access the Complete Dataset 📊](https://buymeacoffee.com/pacha/e/456610)**
 
 What you get:
 
