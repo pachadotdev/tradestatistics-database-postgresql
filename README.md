@@ -9,10 +9,12 @@ This repository contains scripts for processing and harmonizing UN Comtrade Plus
 ## Key Features
 
 - 35 years of international trade data (1988-2023)
-- All data converted to HS22 (H6) standard from original reporter classifications (HS92, SITC Rev 2, etc.)
+- All data converted to the Harmonized System Rev. 2022 (HS22 or H6) standard from original reporter classifications (HS92, SITC2, etc.)
 - Consistent ISO-3 Alpha codes for all countries
 - Optimized PostgreSQL schema with proper indexing and relationships
 - Extensive data validation and cleaning processes
+- Product-level data at the finest granularity level (HS codes with six digits length)
+- The full database is uses around 65 GB on disk
 
 This represents a decade of experience working with international trade data, incorporating lessons learned from handling various data quality issues and inconsistencies inherent in cross-country trade reporting.
 
