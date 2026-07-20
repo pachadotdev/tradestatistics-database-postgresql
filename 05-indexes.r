@@ -164,6 +164,12 @@ dbExecute(con, sprintf("
      OR iso3_dynamic_d NOT IN (%s)
 ", codes_in_use, codes_in_use))
 
+# drop cases not in use in dgd_colours
+dbExecute(con, sprintf("
+  DELETE FROM dgd_colours
+  WHERE iso3_dynamic NOT IN (%s)
+", codes_in_use))
+
 # drop cases not in use in gsdb_dyadic (its FK constraints also reference
 # dgd_countries, so this must run before dgd_countries rows are dropped)
 dbExecute(con, sprintf("
