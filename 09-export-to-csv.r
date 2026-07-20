@@ -43,3 +43,5 @@ lapply(
     }
   }
 )
+
+dbDisconnect(con)

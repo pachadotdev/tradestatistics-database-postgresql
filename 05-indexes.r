@@ -1,11 +1,12 @@
 lapply(
-  c("RPostgres"),
+  c("RPostgres", "data.table"),
   function(x) {
     if (!requireNamespace(x, quietly = TRUE)) install.packages(x, repos = "https://cran.r-project.org")
   }
 )
 
 library(RPostgres)
+library(data.table)
 
 con <- dbConnect(
   Postgres(),
@@ -114,5 +115,162 @@ dbExecute(con, "CREATE INDEX itpds_importer_iso3 ON itpds (importer_iso3)")
 dbExecute(con, "CREATE INDEX itpds_exporter_iso3 ON itpds (exporter_iso3)")
 dbExecute(con, "CREATE INDEX itpds_importer_iso3_dynamic ON itpds (importer_iso3_dynamic)")
 dbExecute(con, "CREATE INDEX itpds_exporter_iso3_dynamic ON itpds (exporter_iso3_dynamic)")
+
+# Drop dgd/dgd_countries rows not used in itpde/itpds ----
+
+countries_in_use <- setDT(dbGetQuery(con, "
+  SELECT DISTINCT ON (importer_iso3_dynamic) 
+         importer_iso3_dynamic
+  FROM itpde_imp_exp
+  ORDER BY importer_iso3_dynamic
+"))
+
+countries_in_use2 <- setDT(dbGetQuery(con, "
+  SELECT DISTINCT ON (exporter_iso3_dynamic) 
+         exporter_iso3_dynamic
+  FROM itpde_imp_exp
+  ORDER BY exporter_iso3_dynamic
+"))
+
+countries_in_use3 <- setDT(dbGetQuery(con, "
+  SELECT DISTINCT ON (importer_iso3_dynamic) 
+         importer_iso3_dynamic
+  FROM itpds_imp_exp
+  ORDER BY importer_iso3_dynamic
+"))
+
+countries_in_use4 <- setDT(dbGetQuery(con, "
+  SELECT DISTINCT ON (exporter_iso3_dynamic) 
+         exporter_iso3_dynamic
+  FROM itpds_imp_exp
+  ORDER BY exporter_iso3_dynamic
+"))
+
+countries_in_use <- unique(c(
+  unlist(countries_in_use),
+  unlist(countries_in_use2),
+  unlist(countries_in_use3),
+  unlist(countries_in_use4)
+))
+
+codes_in_use <- paste(dbQuoteLiteral(con, countries_in_use), collapse = ", ")
+
+# dgd rows must go first: dgd has FK constraints (countries_o, countries_d)
+# pointing at dgd_countries, so dgd_countries rows can't be dropped while
+# still referenced by dgd
+dbExecute(con, sprintf("
+  DELETE FROM dgd
+  WHERE iso3_dynamic_o NOT IN (%s)
+     OR iso3_dynamic_d NOT IN (%s)
+", codes_in_use, codes_in_use))
+
+# drop cases not in use in gsdb_dyadic (its FK constraints also reference
+# dgd_countries, so this must run before dgd_countries rows are dropped)
+dbExecute(con, sprintf("
+  DELETE FROM gsdb_dyadic
+  WHERE sanctioning_state_dynamic NOT IN (%s)
+     OR sanctioned_state_dynamic NOT IN (%s)
+", codes_in_use, codes_in_use))
+
+# now the orphaned dgd_countries rows can be safely removed
+dbExecute(con, sprintf("
+  DELETE FROM dgd_countries
+  WHERE dynamic_code NOT IN (%s)
+", codes_in_use))
+
+# Countries that need deambiguation ----
+
+dups <- dbGetQuery(con, "SELECT 
+    country, 
+    COUNT(*) AS n
+FROM 
+    dgd_countries
+GROUP BY 
+    country")
+
+dups[dups$n > 1, ]
+
+# > dups[dups$n > 1, ]
+#          country n
+# 21  Saudi Arabia 2
+# 51        Serbia 2
+# 92  South Africa 2
+# 118        Sudan 2
+# 231      Romania 2
+
+# Saudi Arabia	SAU	SAU
+# Saudi Arabia	SAU	SAU.X -> audi-Iraqi Neutral Zone was formerly known using ISO 3-alpha “NTZ”. It was discontinued at the end of 1992. Saudi Arabia without the Neutral Zone is coded using SAU.X.
+# Serbia	      SRB	SRB
+# Serbia	      SRB	SRB.X -> Serbia is coded with SRB.X following Kosovo’s split in 2008
+# South Africa	ZAF	ZAF
+# South Africa	ZAF	ZAF.X -> Namibia became independent of South Africa in 1990. South Africa code changed from ZAF to ZAF.X.
+# Sudan       	SDN	SDN
+# Sudan	        SDN	SDN.X -> Following the independence of South Sudan from Sudan in 2011, Sudan’s code changed from SDN to SDN.X
+# Romania	      ROU	ROM
+# Romania	      ROU	ROU -> Officially recognized ISO 3-alpha for Romania was ROM in 1948–2001, changing to ROU in 2002. Dynamic code for Romania reflects this change, while ISO 3-alpha remains ROU throughout to facilitate matching between this and other datasets.
+
+# disambiguate remaining duplicated names with a short descriptive suffix
+dbExecute(con, "
+  UPDATE dgd_countries
+  SET country = CASE dynamic_code
+    WHEN 'SAU.X' THEN 'Saudi Arabia (after Neutral Zone discontinued)'
+    WHEN 'SRB.X' THEN 'Serbia (after Kosovo split)'
+    WHEN 'ZAF.X' THEN 'South Africa (after Namibia independence)'
+    WHEN 'SDN.X' THEN 'Sudan (after South Sudan independence)'
+    WHEN 'ROM'   THEN 'Romania (ISO 3-alpha ROM, pre-2002)'
+    WHEN 'ROU'   THEN 'Romania (ISO 3-alpha ROU, 2002+)'
+    ELSE country
+  END
+  WHERE dynamic_code IN ('SAU.X', 'SRB.X', 'ZAF.X', 'SDN.X', 'ROM', 'ROU')
+")
+
+dups <- dbGetQuery(con, "SELECT 
+    country, 
+    COUNT(*) AS n
+FROM 
+    dgd_countries
+GROUP BY 
+    country")
+
+dups[dups$n > 1, ]
+
+# MYS.Y is a typo, use MYS.X
+
+# rename MYS.Y to MYS.X in place (keep it as MYS-MYS.X in dgd_countries,
+# not add a separate row). This requires updating the parent row in
+# dgd_countries and all FK-referencing child tables atomically, since
+# neither can be updated first without violating the other's FK constraint.
+# Temporarily make the FK constraints deferrable so they're only checked
+# at COMMIT, once everything is consistent.
+dbExecute(con, "ALTER TABLE dgd ALTER CONSTRAINT countries_o DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE dgd ALTER CONSTRAINT countries_d DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE itpde ALTER CONSTRAINT importers DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE itpde ALTER CONSTRAINT exporters DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE itpds ALTER CONSTRAINT importers DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE itpds ALTER CONSTRAINT exporters DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE gsdb_dyadic ALTER CONSTRAINT sanctioning_countries DEFERRABLE INITIALLY DEFERRED")
+dbExecute(con, "ALTER TABLE gsdb_dyadic ALTER CONSTRAINT sanctioned_countries DEFERRABLE INITIALLY DEFERRED")
+
+dbWithTransaction(con, {
+  dbExecute(con, "UPDATE dgd_countries SET dynamic_code = 'MYS.X' WHERE dynamic_code = 'MYS.Y'")
+  dbExecute(con, "UPDATE dgd SET iso3_dynamic_o = 'MYS.X' WHERE iso3_dynamic_o = 'MYS.Y'")
+  dbExecute(con, "UPDATE dgd SET iso3_dynamic_d = 'MYS.X' WHERE iso3_dynamic_d = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE gsdb_dyadic SET sanctioning_state_dynamic = 'MYS.X' WHERE sanctioning_state_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE gsdb_dyadic SET sanctioned_state_dynamic = 'MYS.X' WHERE sanctioned_state_dynamic = 'MYS.Y'")
+})
+
+# restore the constraints to their original (non-deferrable) behaviour
+dbExecute(con, "ALTER TABLE dgd ALTER CONSTRAINT countries_o NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE dgd ALTER CONSTRAINT countries_d NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE itpde ALTER CONSTRAINT importers NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE itpde ALTER CONSTRAINT exporters NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE itpds ALTER CONSTRAINT importers NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE itpds ALTER CONSTRAINT exporters NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE gsdb_dyadic ALTER CONSTRAINT sanctioning_countries NOT DEFERRABLE")
+dbExecute(con, "ALTER TABLE gsdb_dyadic ALTER CONSTRAINT sanctioned_countries NOT DEFERRABLE")
 
 dbDisconnect(con)

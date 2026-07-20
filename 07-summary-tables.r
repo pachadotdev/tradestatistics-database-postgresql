@@ -59,3 +59,5 @@ lapply(
     dbWriteTable(con, paste0(tbl, "_exp_ind"), chunk8e, append = TRUE)
   }
 )
+
+dbDisconnect(con)

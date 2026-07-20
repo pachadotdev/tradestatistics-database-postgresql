@@ -56,3 +56,5 @@ itpd_colours[, broad_sector := NULL]
 itpd_colours[, colour := clrs[1:nrow(itpd_colours)]]
 
 dbWriteTable(con, "itpd_colours", itpd_colours, overwrite = TRUE)
+
+dbDisconnect(con)
