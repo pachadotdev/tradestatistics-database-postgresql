@@ -184,6 +184,12 @@ dbExecute(con, sprintf("
   WHERE dynamic_code NOT IN (%s)
 ", codes_in_use))
 
+# now the orphaned dgd_colours rows can be safely removed
+dbExecute(con, sprintf("
+  DELETE FROM dgd_colours
+  WHERE iso3_dynamic NOT IN (%s)
+", codes_in_use))
+
 # Countries that need deambiguation ----
 
 dups <- dbGetQuery(con, "SELECT 
@@ -259,14 +265,41 @@ dbExecute(con, "ALTER TABLE gsdb_dyadic ALTER CONSTRAINT sanctioned_countries DE
 
 dbWithTransaction(con, {
   dbExecute(con, "UPDATE dgd_countries SET dynamic_code = 'MYS.X' WHERE dynamic_code = 'MYS.Y'")
+  dbExecute(con, "UPDATE dgd_colours SET iso3_dynamic = 'MYS.X' WHERE iso3_dynamic = 'MYS.Y'")
+
   dbExecute(con, "UPDATE dgd SET iso3_dynamic_o = 'MYS.X' WHERE iso3_dynamic_o = 'MYS.Y'")
   dbExecute(con, "UPDATE dgd SET iso3_dynamic_d = 'MYS.X' WHERE iso3_dynamic_d = 'MYS.Y'")
+  
   dbExecute(con, "UPDATE itpde SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
   dbExecute(con, "UPDATE itpde SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  
   dbExecute(con, "UPDATE itpds SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
   dbExecute(con, "UPDATE itpds SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  
   dbExecute(con, "UPDATE gsdb_dyadic SET sanctioning_state_dynamic = 'MYS.X' WHERE sanctioning_state_dynamic = 'MYS.Y'")
   dbExecute(con, "UPDATE gsdb_dyadic SET sanctioned_state_dynamic = 'MYS.X' WHERE sanctioned_state_dynamic = 'MYS.Y'")
+  
+  dbExecute(con, "UPDATE itpde_exp SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_exp_ind SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_exp_sec SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+
+  dbExecute(con, "UPDATE itpde_imp SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_imp_ind SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_imp_sec SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+
+  dbExecute(con, "UPDATE itpds_imp SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds_imp_ind SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds_imp_sec SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+
+  dbExecute(con, "UPDATE itpde_imp_exp SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_imp_exp_sec SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_imp_exp SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpde_imp_exp_sec SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+
+  dbExecute(con, "UPDATE itpds_imp_exp SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds_imp_exp_sec SET importer_iso3_dynamic = 'MYS.X' WHERE importer_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds_imp_exp SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
+  dbExecute(con, "UPDATE itpds_imp_exp_sec SET exporter_iso3_dynamic = 'MYS.X' WHERE exporter_iso3_dynamic = 'MYS.Y'")
 })
 
 # restore the constraints to their original (non-deferrable) behaviour
